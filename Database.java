@@ -45,6 +45,36 @@ public class Database {
             return null;
         }
     }
+    
+    public Boolean InserisciUser(String username,String email,String password,int id_company,String tipo_utente) {
+    	try {
+    		 if(conn!=null || conn.isClosed()){
+                 avviaConnessione();
+             }
+    		 String query=null;
+    		 System.out.println("Iserisci User | Tipo Utente: "+tipo_utente);
+    		 switch (tipo_utente) {
+    		 	case "employee":
+    		 		 query="INSERT INTO employees (username,email,password,id_company) VALUES (?,?,?,?)";
+    		 	case "manager": 
+    		 		 query="INSERT INTO manager (username,email,password,id_company) VALUES (?,?,?,?)";
+    		 		
+    		 }    			
+    		 
+    		 PreparedStatement pstmt = conn.prepareStatement(query);
+    		 pstmt.setString(1, username);
+    		 pstmt.setString(2, email);
+    		 pstmt.setString(3,password);
+    		 pstmt.setInt(4, id_company);
+    		 int numRows = pstmt.executeUpdate();
+    		 return numRows>0;
+
+    		}catch (Exception e) {
+    	            System.err.println("Errore nella esecuzione della query: ");
+    	            e.printStackTrace();
+    	            return false;
+    	        }
+    	}
 
     public void chiudiConnessione(){
         try{

@@ -13,7 +13,8 @@ public class DatabaseMenager {
     private String dbPassword;
 
     public DatabaseMenager() {
-        caricaConfigurazione("C:\\Users\\Antonella\\Documents\\MEGA\\Università\\2° Anno 2024-25\\Programmazione ad Oggetti\\Progetto To-do-LIst\\to-do-list\\src\\ServerSide\\config.xml");
+    	String url="C:\\\\Users\\\\Antonella\\\\Documents\\\\MEGA\\\\Università\\\\2° Anno 2024-25\\\\Programmazione ad Oggetti\\\\Progetto To-do-LIst\\\\server\\\\src\\\\main\\\\java\\\\ServerSide\\config.xml";
+        caricaConfigurazione(url);
     }
 
     public DatabaseMenager(String percorsoFile) {
