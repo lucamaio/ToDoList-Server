@@ -53,14 +53,12 @@ public class Database {
              }
     		 String query=null;
     		 System.out.println("Iserisci User | Tipo Utente: "+tipo_utente);
-    		 switch (tipo_utente) {
-    		 	case "employee":
-    		 		 query="INSERT INTO employees (username,email,password,id_company) VALUES (?,?,?,?)";
-    		 	case "manager": 
-    		 		 query="INSERT INTO manager (username,email,password,id_company) VALUES (?,?,?,?)";
-    		 		
-    		 }    			
-    		 
+             if(tipo_utente.equals("employee")){
+                query="INSERT INTO employees (username,email,password,id_company) VALUES (?,?,?,?)";
+             }else{
+                query="INSERT INTO manager (username,email,password,id_company) VALUES (?,?,?,?)";
+             }
+             
     		 PreparedStatement pstmt = conn.prepareStatement(query);
     		 pstmt.setString(1, username);
     		 pstmt.setString(2, email);
