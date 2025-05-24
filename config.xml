@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurazione>
+    <server>
+        <porta>3306</porta>
+    </server>
+    <database>
+        <url>jdbc:mysql://localhost:3306/to-list</url>
+        <username>root</username>
+        <password></password>
+    </database>
+</configurazione>
