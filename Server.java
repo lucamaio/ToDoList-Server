@@ -10,11 +10,11 @@ public class Server {
         int porta = 1234; 
 
         try (ServerSocket serverSocket = new ServerSocket(porta)) {
-            System.out.println("🚀 Server avviato sulla porta " + porta);
+            System.out.println("Server in ascolto sulla porta " + porta);
 
             while (true) {
                 Socket clientSocket = serverSocket.accept();
-                System.out.println("🔗 Nuovo client connesso: " + clientSocket.getInetAddress());
+                System.out.println("Nuovo client connesso: " + clientSocket.getInetAddress());
                 new Thread(new GestoreClient(clientSocket)).start();
             }
 

@@ -19,8 +19,6 @@ public class Database {
 
 
     public void avviaConnessione(){
-        System.out.println(url);
-        System.out.println(password);
          try{
             conn = DriverManager.getConnection(url, user, password);
             System.out.println("Connessione stabilita con il DB");
@@ -33,7 +31,7 @@ public class Database {
 
     public ResultSet eseguiQuery(String query){
         try {
-            if(conn!=null || conn.isClosed()){
+            if(conn==null || conn.isClosed()){
                 avviaConnessione();
             }
             Statement stmt = conn.createStatement();
@@ -46,7 +44,7 @@ public class Database {
         }
     }
     
-    public Boolean InserisciUser(String username,String email,String password,int id_company,String tipo_utente) {
+    public Boolean InserisciUser(String nome,String cognome, String email,String password,int id_company,String tipo_utente) {
     	try {
     		 if(conn!=null || conn.isClosed()){
                  avviaConnessione();
@@ -54,16 +52,45 @@ public class Database {
     		 String query=null;
     		 System.out.println("Iserisci User | Tipo Utente: "+tipo_utente);
              if(tipo_utente.equals("employee")){
-                query="INSERT INTO employees (username,email,password,id_company) VALUES (?,?,?,?)";
+                query="INSERT INTO employees (nome,cognome,email,password,id_company) VALUES (?,?,?,?,?)";
              }else{
-                query="INSERT INTO manager (username,email,password,id_company) VALUES (?,?,?,?)";
+                query="INSERT INTO manager (nome,cognome,email,password,id_company) VALUES (?,?,?,?,?)";
              }
              
     		 PreparedStatement pstmt = conn.prepareStatement(query);
-    		 pstmt.setString(1, username);
-    		 pstmt.setString(2, email);
-    		 pstmt.setString(3,password);
-    		 pstmt.setInt(4, id_company);
+    		 pstmt.setString(1, nome);
+    		 pstmt.setString(2, cognome);
+    		 pstmt.setString(3, email);
+    		 pstmt.setString(4,password);
+    		 pstmt.setInt(5, id_company);
+    		 int numRows = pstmt.executeUpdate();
+    		 return numRows>0;
+
+    		}catch (Exception e) {
+    	            System.err.println("Errore nella esecuzione della query: ");
+    	            e.printStackTrace();
+    	            return false;
+    	        }
+    	}
+    
+    public Boolean InserisciTask(String titolo,String descrizione,String stato, String priorita,String scadenza, int idEmployee, int idManager) {
+    	try {
+    		 if(conn!=null || conn.isClosed()){
+                 avviaConnessione();
+             }
+    		 String query=null;
+             query="INSERT INTO attivita (titolo,descrizione,stato,priorita,scadenza,id_employee,id_manager) VALUES (?,?,?,?,?,?,?)";
+            
+             
+    		 PreparedStatement pstmt = conn.prepareStatement(query);
+    		 pstmt.setString(1, titolo);
+    		 pstmt.setString(2, descrizione);
+    		 pstmt.setString(3,stato);
+    		 pstmt.setString(4, priorita);
+    		 pstmt.setString(5, scadenza);
+    		 pstmt.setInt(6, idEmployee);
+    		 pstmt.setInt(7, idManager);
+    		 
     		 int numRows = pstmt.executeUpdate();
     		 return numRows>0;
 

@@ -27,6 +27,7 @@ public class GestoreClient implements Runnable {
             while (true) {
                 Richiesta richiesta = (Richiesta) inStream.readObject();
                 Risposta risposta = GestoreRichiesta.process(richiesta);
+                //risposta.stampaDipendenti();
                 outStream.writeObject(risposta);
                 outStream.flush();
             }
