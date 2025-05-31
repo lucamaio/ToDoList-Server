@@ -1,115 +1,216 @@
 package ServerSide;
 
 import java.sql.*;
+import Shared.*;
 
 public class Database {
 
     private DatabaseMenager configurazione;
     private int porta;
-    private String url,user, password;
+    private String url, user, password;
     private Connection conn;
 
-    public Database(){
-       this.configurazione = new DatabaseMenager();
-       this.url=configurazione.getDbUrl();
-       this.user=configurazione.getDbUsername();
-       this.porta=configurazione.getPortaServer();
-       this.password=configurazione.getDbPassword();
+    public Database() {
+        this.configurazione = new DatabaseMenager();
+        this.url = configurazione.getDbUrl();
+        this.user = configurazione.getDbUsername();
+        this.porta = configurazione.getPortaServer();
+        this.password = configurazione.getDbPassword();
     }
 
-
-    public void avviaConnessione(){
-         try{
+    public void avviaConnessione() {
+        try {
             conn = DriverManager.getConnection(url, user, password);
-            System.out.println("Connessione stabilita con il DB");
-         }
-         catch (SQLException e) {
+        } catch (SQLException e) {
             System.err.println("Errore nella connessione al database:");
             e.printStackTrace();
         }
     }
 
-    public ResultSet eseguiQuery(String query){
+    public ResultSet eseguiQuery(String query) {
         try {
-            if(conn==null || conn.isClosed()){
+            if (conn == null || conn.isClosed()) {
                 avviaConnessione();
             }
             Statement stmt = conn.createStatement();
-            ResultSet result=stmt.executeQuery(query);
-            return result;
+            return stmt.executeQuery(query);
         } catch (Exception e) {
-            System.err.println("Errore nella esecuzione della query: ");
+            System.err.println("Errore nell'esecuzione della query:");
             e.printStackTrace();
             return null;
         }
     }
-    
-    public Boolean InserisciUser(String nome,String cognome, String email,String password,int id_company,String tipo_utente) {
-    	try {
-    		 if(conn!=null || conn.isClosed()){
-                 avviaConnessione();
-             }
-    		 String query=null;
-    		 System.out.println("Iserisci User | Tipo Utente: "+tipo_utente);
-             if(tipo_utente.equals("employee")){
-                query="INSERT INTO employees (nome,cognome,email,password,id_company) VALUES (?,?,?,?,?)";
-             }else{
-                query="INSERT INTO manager (nome,cognome,email,password,id_company) VALUES (?,?,?,?,?)";
-             }
-             
-    		 PreparedStatement pstmt = conn.prepareStatement(query);
-    		 pstmt.setString(1, nome);
-    		 pstmt.setString(2, cognome);
-    		 pstmt.setString(3, email);
-    		 pstmt.setString(4,password);
-    		 pstmt.setInt(5, id_company);
-    		 int numRows = pstmt.executeUpdate();
-    		 return numRows>0;
 
-    		}catch (Exception e) {
-    	            System.err.println("Errore nella esecuzione della query: ");
-    	            e.printStackTrace();
-    	            return false;
-    	        }
-    	}
-    
-    public Boolean InserisciTask(String titolo,String descrizione,String stato, String priorita,String scadenza, int idEmployee, int idManager) {
-    	try {
-    		 if(conn!=null || conn.isClosed()){
-                 avviaConnessione();
-             }
-    		 String query=null;
-             query="INSERT INTO attivita (titolo,descrizione,stato,priorita,scadenza,id_employee,id_manager) VALUES (?,?,?,?,?,?,?)";
-            
-             
-    		 PreparedStatement pstmt = conn.prepareStatement(query);
-    		 pstmt.setString(1, titolo);
-    		 pstmt.setString(2, descrizione);
-    		 pstmt.setString(3,stato);
-    		 pstmt.setString(4, priorita);
-    		 pstmt.setString(5, scadenza);
-    		 pstmt.setInt(6, idEmployee);
-    		 pstmt.setInt(7, idManager);
-    		 
-    		 int numRows = pstmt.executeUpdate();
-    		 return numRows>0;
+    public Boolean inserisciUser(String nome, String cognome, String email, String password, int id_company, String tipo_utente) {
+        PreparedStatement pstmt = null;
+        try {
+            if (conn == null || conn.isClosed()) {
+                avviaConnessione();
+            }
+            String query;
+            System.out.println("Inserisci User | Tipo Utente: " + tipo_utente);
+            if ("employee".equals(tipo_utente)) {
+                query = "INSERT INTO employees (nome, cognome, email, password, id_company) VALUES (?,?,?,?,?)";
+            } else {
+                query = "INSERT INTO manager (nome, cognome, email, password, id_company) VALUES (?,?,?,?,?)";
+            }
 
-    		}catch (Exception e) {
-    	            System.err.println("Errore nella esecuzione della query: ");
-    	            e.printStackTrace();
-    	            return false;
-    	        }
-    	}
+            pstmt = conn.prepareStatement(query);
+            pstmt.setString(1, nome);
+            pstmt.setString(2, cognome);
+            pstmt.setString(3, email);
+            pstmt.setString(4, password);
+            pstmt.setInt(5, id_company);
 
-    public void chiudiConnessione(){
-        try{
-            if(conn!=null && !conn.isClosed()){
+            int numRows = pstmt.executeUpdate();
+            return numRows > 0;
+        } catch (Exception e) {
+            System.err.println("Errore nell'esecuzione della query:");
+            e.printStackTrace();
+            return false;
+        } finally {
+            try {
+                if (pstmt != null) pstmt.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public int verificaEsistenzaUtente(String tipoUtente, String cognome, String nome) {
+        PreparedStatement stmt = null;
+        ResultSet result = null;
+
+        try {
+            if (conn == null || conn.isClosed()) {
+                avviaConnessione();
+            }
+
+            if (!tipoUtente.equals("employee") && !tipoUtente.equals("manager") && !tipoUtente.equals("admin")) {
+                throw new IllegalArgumentException("Tipo utente non valido");
+            }
+
+            String query = "SELECT id FROM " + tipoUtente + " WHERE cognome = ? AND nome = ?";
+            stmt = conn.prepareStatement(query);
+            stmt.setString(1, cognome);
+            stmt.setString(2, nome);
+
+            result = stmt.executeQuery();
+
+            if (result.next()) {
+                return result.getInt("id");
+            } else {
+                return 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Errore nell'esecuzione della query:");
+            e.printStackTrace();
+            return -1;
+        } finally {
+            try {
+                if (result != null) result.close();
+                if (stmt != null) stmt.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public Boolean inserisciTask(String titolo, String descrizione, String stato, String priorita, String scadenza, int idEmployee, int idManager) {
+        PreparedStatement pstmt = null;
+        try {
+            if (conn == null || conn.isClosed()) {
+                avviaConnessione();
+            }
+            String query = "INSERT INTO attivita (titolo, descrizione, stato, priorita, scadenza, id_employee, id_manager) VALUES (?,?,?,?,?,?,?)";
+            pstmt = conn.prepareStatement(query);
+            pstmt.setString(1, titolo);
+            pstmt.setString(2, descrizione);
+            pstmt.setString(3, stato);
+            pstmt.setString(4, priorita);
+            pstmt.setString(5, scadenza);
+            pstmt.setInt(6, idEmployee);
+            pstmt.setInt(7, idManager);
+
+            int numRows = pstmt.executeUpdate();
+            return numRows > 0;
+        } catch (Exception e) {
+            System.err.println("Errore nell'esecuzione della query:");
+            e.printStackTrace();
+            return false;
+        } finally {
+            try {
+                if (pstmt != null) pstmt.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public Boolean updateStatoAttivita(int id, String stato) {
+        PreparedStatement pstmt = null;
+        try {
+            if (conn == null || conn.isClosed()) {
+                avviaConnessione();
+            }
+            String query = "UPDATE attivita SET stato=? WHERE id=?";
+            pstmt = conn.prepareStatement(query);
+            pstmt.setString(1, stato);
+            pstmt.setInt(2, id);
+
+            int righeModificate = pstmt.executeUpdate();
+            return righeModificate > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            try {
+                if (pstmt != null) pstmt.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public Boolean updateAttivita(Attivita attivita) {
+        PreparedStatement pstmt = null;
+        try {
+            if (conn == null || conn.isClosed()) {
+                avviaConnessione();
+            }
+            String query = "UPDATE attivita SET titolo=?, descrizione=?, scadenza=?, stato=?, priorita=?, id_employee=? WHERE id=?";
+            pstmt = conn.prepareStatement(query);
+            pstmt.setString(1, attivita.getTitolo());
+            pstmt.setString(2, attivita.getDescrizione());
+            pstmt.setString(3, attivita.getDataScadenza());
+            pstmt.setString(4, attivita.getStato());
+            pstmt.setString(5, attivita.getPriorita());
+            pstmt.setInt(6, attivita.getIdEmployee());
+            pstmt.setInt(7, attivita.getId());
+
+            int righeModificate = pstmt.executeUpdate();
+            return righeModificate > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            try {
+                if (pstmt != null) pstmt.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void chiudiConnessione() {
+        try {
+            if (conn != null && !conn.isClosed()) {
                 conn.close();
                 System.out.println("Connessione con il DB chiusa");
             }
-        } catch(Exception e){
-            System.err.println("Errore nella chiusura del DB: ");
+        } catch (Exception e) {
+            System.err.println("Errore nella chiusura del DB:");
             e.printStackTrace();
         }
     }
-}
+} 
