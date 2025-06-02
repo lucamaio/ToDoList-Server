@@ -13,6 +13,7 @@ public class GestoreRichiesta {
 
 	public static Risposta process(Richiesta richiesta) {
         String tipo = richiesta.getTipo();
+        System.out.println(tipo);
         Database DB=new Database();
         String query;
         ResultSet result;
@@ -20,7 +21,7 @@ public class GestoreRichiesta {
         String nome=null,cognome=null, password=null,email=null,attivita=null,tipo_utente=null;
         String titolo=null,descrizione=null,statoStr=null,prioritaStr=null;
 		String scadenza=null;
-        int id=-1;
+        int id=-1, idDepartment=-1, idCompany=-1;
         switch (tipo) {
             case "SING-UP":
             	DB.avviaConnessione();
@@ -88,45 +89,107 @@ public class GestoreRichiesta {
                 }
 
             case "LOGIN":
-                String[] keysLogin={"email","password"};
-                Object[] parametriLogin = leggiParametri(2,keysLogin,richiesta);
+                String[] keysLogin = {"email", "password"};
+                Object[] parametriLogin = leggiParametri(2, keysLogin, richiesta);
 
-                for(int i=0;i<2;i++) {
-            		if(parametriLogin[i] instanceof String){
-            			switch (i) {
-	            			case 0:
-	        					email=(String) parametriLogin[i]; break;
-	        				case 1: 
-	        					password=(String) parametriLogin[i]; break;
-            			}
-            		}else{
-            			return new Risposta("ERRORE", "Formato dati non valido.");
-            		}
-            	}
-
-                //1. Verifico se l'utente esiste
-                DB.avviaConnessione();
-                HashMap<String, Object> infoUser= VerificaCredenzialiUtente(email, password, DB);
-                
-                if(infoUser!=null) {
-                	if((infoUser.get("esito")).equals("Errore")) {
-                		return new Risposta ("ERRORE","Errore durante la ricerca del utente");
-                	}
-                	if((infoUser.get("esito")).equals("Password Errata")){
-                		return new Risposta ("ERRORE","Errore password errata");
-                	}
-                	if((infoUser.get("esito")).equals("Not Found")) {
-                		return new Risposta ("ERRORE","Utente non trovato");
-                	}
-                }else {
-                	return new Risposta ("ERRORE","infoUser is null");
+                for (int i = 0; i < 2; i++) {
+                    if (!(parametriLogin[i] instanceof String)) {
+                        return new Risposta("ERRORE", "Formato dati non valido.");
+                    }
                 }
-                
-                answer= new Risposta("OK","Utente trovato");
-                answer.aggiungiParametro("tipo_utente", infoUser.get("tipo_utente"));
-                answer.aggiungiParametro("id", infoUser.get("id"));
-                answer.aggiungiParametro("id company", infoUser.get("id company"));
-                return answer;
+
+                email = (String) parametriLogin[0];
+                password = (String) parametriLogin[1];
+
+                DB.avviaConnessione();
+                HashMap<String, Object> infoUser = VerificaCredenzialiUtente(email, password, DB);
+
+                if (infoUser == null) {
+                    return new Risposta("ERRORE", "infoUser is null");
+                }
+
+                String esito = (String) infoUser.get("esito");
+                if ("Errore".equals(esito)) {
+                    return new Risposta("ERRORE", "Errore durante la ricerca dell'utente");
+                }
+                if ("Password Errata".equals(esito)) {
+                    return new Risposta("ERRORE", "Password errata");
+                }
+                if ("Not Found".equals(esito)) {
+                    return new Risposta("ERRORE", "Utente non trovato");
+                }
+
+                answer = new Risposta("OK", "Utente trovato");
+
+                if (infoUser.containsKey("tipo_utente")) {
+                    String tipoUtente = (String) infoUser.get("tipo_utente");
+                    Utente user = null;
+                  
+                    switch (tipoUtente) {
+                        case "employee":
+                            System.out.println("Sono dentro employee");
+                            id = (int) infoUser.get("id");
+                            nome = (String) infoUser.get("nome");
+                            cognome = (String) infoUser.get("cognome");
+                            idDepartment = (int) infoUser.get("id_department");
+
+                            if (id == -1 || nome == null || cognome == null || idDepartment == -1) {
+                                return new Risposta("ERRORE", "Dati non caricati correttamente");
+                            }
+
+                            user = new Employee(id, nome, cognome, email, idDepartment);
+                            answer.aggiungiParametro("utente", user);
+                            return answer; 
+
+                        case "manager":
+                            System.out.println("Sono dentro manager!");
+                            id = (int) infoUser.get("id");
+                            nome = (String) infoUser.get("nome");
+                            cognome = (String) infoUser.get("cognome");
+
+                            if (id == -1 || nome == null || cognome == null) {
+                                return new Risposta("ERRORE", "Dati non caricati correttamente");
+                            }
+
+                            user = new Manager(id, nome, cognome, email);
+                            answer.aggiungiParametro("utente", user);
+                            return answer; 
+                            
+                        case "director":
+                            System.out.println("Sono dentro director");
+                            id = (int) infoUser.get("id");
+                            nome = (String) infoUser.get("nome");
+                            cognome = (String) infoUser.get("cognome");
+                            idCompany = (int) infoUser.get("id_company");
+
+                            if (id == -1 || nome == null || cognome == null || idCompany == -1) {
+                                return new Risposta("ERRORE", "Dati non caricati correttamente");
+                            }
+
+                            user = new Director(id, nome, cognome, email, idCompany);
+                            answer.aggiungiParametro("utente", user);
+                            return answer; 
+                        case "admin":
+                            System.out.println("Sono dentro admin");
+                            id = (int) infoUser.get("id");
+                            nome = (String) infoUser.get("nome");
+                            cognome = (String) infoUser.get("cognome");
+
+                            if (id == -1 || nome == null || cognome == null) {
+                                return new Risposta("ERRORE", "Dati non caricati correttamente");
+                            }
+
+                            user = new Admin(id, nome, cognome, email);
+                            answer.aggiungiParametro("utente", user);
+                            return answer; 
+
+                        default:
+                            return new Risposta("ERRORE", "Tipo utente non valido nella chiamata della funzione!");
+                    }
+
+                }else {
+                	return new Risposta("ERRORE", "Tipo utente non trovato");
+                }
 
             case "LOAD ATTIVITA":
             	String[] keysLoadTask= {"tipo utente","id","id company"};
@@ -142,9 +205,9 @@ public class GestoreRichiesta {
             	}
             	
             	if(tipo_utente.equals("employee")) {
-            		query="SELECT * FROM attivita WHERE id_employee='"+id+"' AND stato!='Completato'";
+            		query="SELECT * FROM attivita WHERE id_employee="+id;
             	}else if(tipo_utente.equals("manager")) {
-            		int idCompany=getIdCompany(tipo_utente,id,DB);
+            		idCompany=getIdCompany(tipo_utente,id,DB);
             		query="SELECT * FROM attivita a INNER JOIN employee e ON a.id_employee=e.id WHERE e.id_company="+idCompany;
             	}else if(tipo_utente.equals("admin")) {
             		query="SELECT * FROM attivita";
@@ -247,7 +310,6 @@ public class GestoreRichiesta {
                 	new Risposta("ERRORE","Errore esecuzione della query");
                 }
                 
-                
                 //4. inserico la task sul DB                
                 
                 if(DB.inserisciTask(titolo, descrizione, statoStr, prioritaStr, scadenza, idEmployee, idManager)) {
@@ -259,7 +321,7 @@ public class GestoreRichiesta {
             case "GET-EMPOLOYEE":
             	DB.avviaConnessione();
             	// Logica per l'invio dei dipendenti della azienda
-            	int idCompany=(int) richiesta.getParametro("id_company");
+            	idCompany=(int) richiesta.getParametro("id_company");
             	query="SELECT * FROM employee WHERE id_company="+idCompany;
             	
             	result=DB.eseguiQuery(query);
@@ -288,7 +350,11 @@ public class GestoreRichiesta {
             case "UPDATE-ATTIVITA":
             	DB.avviaConnessione();
             	//System.out.println("Sono dentro Upadate");
+            	if(!richiesta.verificaKey("tipoUtente")) {
+            		return new Risposta("ERRORE","Tipo Utente non trovato");
+            	}
             	String tipoUtente = (String) richiesta.getParametro("tipoUtente");
+            	
             	if(tipoUtente.equals("employee")) {
             		String nuovoStato=(String) richiesta.getParametro("nuovo-stato");
             		id=(int) richiesta.getParametro("id");
@@ -324,6 +390,78 @@ public class GestoreRichiesta {
             	}else {
             		return new Risposta("ERRORE","Autorizzazione negata!");
             	}
+            	
+            case "LOAD-ARCHIVIO":
+            	DB.avviaConnessione();
+            	if(!richiesta.verificaKey("tipoUtente")) {
+            		return new Risposta("ERRORE","Tipo Utente non trovato");
+            	}
+            	
+            	tipoUtente=richiesta.getParametro("tipoUtente").toString();
+            	if(tipoUtente.equals("employee")) {
+            		// Verifico se esiste l'id
+            		if(!richiesta.verificaKey("id")) {
+            			return new Risposta("ERRORE","ID mancante!");
+            		}
+            		id=(int) richiesta.getParametro("id");
+            		System.out.println(id);
+            		query="SELECT * FROM attivita WHERE id_employee="+id+" AND stato='COMPLETATA'";
+            	}else if(tipoUtente.equals("manager")) {
+            		// Verifico l'esistenza del id Company
+            		
+            		if(!richiesta.verificaKey("id company")) {
+            			return new Risposta("ERRORE","ID mancante!");
+            		}
+            		System.out.println(id);
+            		id=(int) richiesta.getParametro("id company");
+            		query = "SELECT * FROM attivita a INNER JOIN employee e ON a.id_employee = e.id WHERE e.id_company = " + id + " AND a.stato = 'COMPLETATA'";
+
+            		//query="SELECT * FROM attivita a INNER JOIN employee e ON a.id=e.id_company WHERE e.id_company="+id+" AND a.stato='COMPLETATA'";
+            	}else if(tipoUtente.equals("admin")){
+            		query="SELECT * FROM attivita WHERE stato='COMPLETATA'";
+            	}else {
+            		return new Risposta("ERRORE","Autorizzazione negata!");
+            	}
+            	ArrayList<Attivita> listTask=new ArrayList<>();
+            	//System.out.println(query);
+            	result=DB.eseguiQuery(query);
+                if (result != null) {
+                	System.out.println("Sono dentro il primo if");
+                    try {
+                   	 Attivita attivita1 = null;
+                   	 while (result.next()) {
+                   		 System.out.println("Sono dentro il while");
+                   	     id = result.getInt("id");
+                   	     titolo = result.getString("titolo");
+                   	     descrizione = result.getString("descrizione");
+                   	     prioritaStr = result.getString("priorita");
+                   	     statoStr = result.getString("stato");
+                   	     scadenza = result.getString("scadenza");
+
+                   	     int idManager1 = result.getInt("id_manager");
+                   	     int idEmployee1 = result.getInt("id_employee");
+
+                   	     // Conversione stringa -> enum
+                   	     TipoPriorita priorita = TipoPriorita.valueOf(prioritaStr.toUpperCase());
+                   	     StatoAttivita stato = StatoAttivita.valueOf(statoStr.toUpperCase());
+
+                   	     // Creazione oggetto
+                   	     attivita1 = new Attivita(id, titolo, descrizione, scadenza, idManager1, idEmployee1, priorita,stato);
+                   	     //attivita1.getInfo();
+                   	     //System.out.println(attivita1.getInfo());
+                   	     
+                   	  listTask.add(attivita1);
+                   	 }
+                    }catch (SQLException e) {
+                            e.printStackTrace();
+                            return new Risposta("ERRORE", "Errore durante il caricamento dei dati");
+                        }
+           	 }  
+                    if(listTask!=null) {
+                    	answer=new Risposta("OK","Attività trovate con successo");
+                    	answer.aggiungiParametro("Attivita", listTask);
+                    	return answer;
+                    }
 
             default:
                 return new Risposta("ERRORE", "Richiesta non riconosciuta");
@@ -350,9 +488,9 @@ public class GestoreRichiesta {
     
     private static HashMap<String, Object> VerificaCredenzialiUtente(String email, String password, Database DB) {
         HashMap<String, Object> info = new HashMap<>();
-        String[] tipiUtente = {"employee", "manager", "admin"};
+        String[] tipiUtente = {"employee", "manager","director","admin"};
         String cognome=null,nome=null;
-        int id_company=-1;
+        int id_department=-1,id_company=-1;
 
         for (String tipo : tipiUtente) {
             String query = "SELECT * FROM " + tipo + " WHERE email='" + email + "'";
@@ -367,9 +505,11 @@ public class GestoreRichiesta {
                         id = result.getInt("id");
                         nome=result.getString("nome");
                         cognome=result.getString("cognome");
-                        if(!tipo.equals("admin")) {
+                        if(tipo.equals("employee")||tipo.equals("manager")) {
+                        		id_department=result.getInt("id_department");
+                        }else if(tipo.equals("director")) {
                         	id_company=result.getInt("id_company");
-                        }                        
+                        }
                         count++;
                     }
 
@@ -377,7 +517,7 @@ public class GestoreRichiesta {
                         // Verifica password
                         query = "SELECT * FROM " + tipo + " WHERE id='" + id + "' AND password='" + password + "'";
                         result = DB.eseguiQuery(query);
-
+                        
                         if (result != null && result.next()) {
                             info.put("esito", "OK");
                             info.put("id", id);
@@ -385,9 +525,13 @@ public class GestoreRichiesta {
                             info.put("nome", nome);
                             info.put("cognome", cognome);
                             info.put("email", email);
-                            if(!tipo.equals("admin")) {
-                            	info.put("id company", id_company);
+                            
+                            if(tipo.equals("employee")||tipo.equals("manager")) {
+                            	info.put("id_department", id_department);
+                            }else if(tipo.equals("director")) {
+                            	info.put("id_company", id_company);
                             }
+                            
                             return info;
                         } else {
                             info.put("esito", "Password Errata");

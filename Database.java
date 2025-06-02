@@ -183,8 +183,8 @@ public class Database {
             pstmt.setString(1, attivita.getTitolo());
             pstmt.setString(2, attivita.getDescrizione());
             pstmt.setString(3, attivita.getDataScadenza());
-            pstmt.setString(4, attivita.getStato());
-            pstmt.setString(5, attivita.getPriorita());
+            pstmt.setString(4, attivita.getStato().toString());
+            pstmt.setString(5, attivita.getPriorita().toString());
             pstmt.setInt(6, attivita.getIdEmployee());
             pstmt.setInt(7, attivita.getId());
 
