@@ -21,9 +21,9 @@ public class GestoreRichiesta {
         String nome=null,cognome=null, password=null,email=null,attivita=null,tipo_utente=null;
         String titolo=null,descrizione=null,statoStr=null,prioritaStr=null;
 		String scadenza=null;
-        int id=-1, idDepartment=-1, idCompany=-1;
         Utente user = null;
-        switch (tipo) {
+        Integer id, idManager, idEmployee, idDepartment,idCompany;
+		switch (tipo) {
             case "SING-UP":
             	DB.avviaConnessione();
             	
@@ -128,12 +128,12 @@ public class GestoreRichiesta {
                     switch (tipoUtente) {
                         case "employee":
                             System.out.println("Sono dentro employee");
-                            id = (int) infoUser.get("id");
+                            id = (Integer) infoUser.get("id");
                             nome = (String) infoUser.get("nome");
                             cognome = (String) infoUser.get("cognome");
-                            idDepartment = (int) infoUser.get("id_department");
+                            idDepartment = (Integer) infoUser.get("id_department");
 
-                            if (id == -1 || nome == null || cognome == null || idDepartment == -1) {
+                            if (id == null || nome == null || cognome == null || idDepartment == null) {
                                 return new Risposta("ERRORE", "Dati non caricati correttamente");
                             }
 
@@ -143,11 +143,11 @@ public class GestoreRichiesta {
 
                         case "manager":
                             System.out.println("Sono dentro manager!");
-                            id = (int) infoUser.get("id");
+                            id = (Integer) infoUser.get("id");
                             nome = (String) infoUser.get("nome");
                             cognome = (String) infoUser.get("cognome");
 
-                            if (id == -1 || nome == null || cognome == null) {
+                            if (id == null || nome == null || cognome == null) {
                                 return new Risposta("ERRORE", "Dati non caricati correttamente");
                             }
 
@@ -157,12 +157,12 @@ public class GestoreRichiesta {
                             
                         case "director":
                             System.out.println("Sono dentro director");
-                            id = (int) infoUser.get("id");
+                            id = (Integer) infoUser.get("id");
                             nome = (String) infoUser.get("nome");
                             cognome = (String) infoUser.get("cognome");
-                            idCompany = (int) infoUser.get("id_company");
+                            idCompany =(Integer) infoUser.get("id_company");
 
-                            if (id == -1 || nome == null || cognome == null || idCompany == -1) {
+                            if (id == null || nome == null || cognome == null || idCompany == null) {
                                 return new Risposta("ERRORE", "Dati non caricati correttamente");
                             }
 
@@ -171,11 +171,11 @@ public class GestoreRichiesta {
                             return answer; 
                         case "admin":
                             System.out.println("Sono dentro admin");
-                            id = (int) infoUser.get("id");
+                            id = (Integer) infoUser.get("id");
                             nome = (String) infoUser.get("nome");
                             cognome = (String) infoUser.get("cognome");
 
-                            if (id == -1 || nome == null || cognome == null) {
+                            if (id == null || nome == null || cognome == null) {
                                 return new Risposta("ERRORE", "Dati non caricati correttamente");
                             }
 
@@ -209,7 +209,7 @@ public class GestoreRichiesta {
             		if(!richiesta.verificaKey("idDepartment")) {
             			return new Risposta("ERRORE","idDeparment mancante!");
             		}
-            		idDepartment=(int) richiesta.getParametro("idDepartment");
+            		idDepartment=(Integer) richiesta.getParametro("idDepartment");
             		query="SELECT * FROM attivita WHERE id_employee="+user.getId()+" OR id_department="+idDepartment;
             	}else if(tipo_utente.equals("manager")) {
             		query="SELECT a.*, e.nome AS nome_dipendente, e.cognome AS cognome_dipendente, d.nome AS nome_dipartimento "
@@ -241,18 +241,18 @@ public class GestoreRichiesta {
                     		    
                     		    TipoPriorita priorita = TipoPriorita.valueOf(prioritaStr.toUpperCase());
                     		    StatoAttivita stato = StatoAttivita.valueOf(statoStr.toUpperCase());
-                    		    int idManager = result.getInt("id_manager");
+                    		    idManager = result.getInt("id_manager");
 
-                    		    Integer idEmployee = result.getInt("id_employee");
+                    		    idEmployee = result.getInt("id_employee");
                     		    if (result.wasNull()) idEmployee = null;
 
-                    		    Integer idDepartmentInteger = result.getInt("id_department");
-                    		    if (result.wasNull()) idDepartmentInteger = null;
+                    		    idDepartment = result.getInt("id_department");
+                    		    if (result.wasNull()) idDepartment = null;
 
-                    		   if (idEmployee != null || idDepartmentInteger!= null) {
+                    		   if (idEmployee != null || idDepartment!= null) {
                     		        attivita1 = new Attivita(
                     		            id, titolo, descrizione, scadenza,
-                    		            idManager, idEmployee, idDepartmentInteger,
+                    		            idManager, idEmployee, idDepartment,
                     		            priorita, stato
                     		        );
                     		        elencoAttivita.add(attivita1);
@@ -273,70 +273,71 @@ public class GestoreRichiesta {
                      //return new Risposta("OK","Nessuna Attività trovata");
 
             case "AGGIUNGI ATTIVITA":
-            	String employee_name = null;
-            	String[] keysTask={"titolo","descrizione","priorita","scadenza","employee","id_manager"};
-                Object[] parameTask = leggiParametri(6,keysTask,richiesta);
-                int idManager=-1,idEmployee=-1;
-                //stampaParametri(parameTask,6);
-                
-                // 1. Salvo i dati
-                for(int i=0;i<6;i++) {
-            		if(parameTask[i] instanceof String){
-            			switch (i) {
-	            			case 0:
-	        					titolo=(String) parameTask[i]; break;
-	        				case 1: 
-	        					descrizione=(String) parameTask[i]; break;
-	        				case 2:
-	        					prioritaStr=(String) parameTask[i]; break;
-	        				case 3:
-	        					scadenza=(String) parameTask[i]; break;
-	        				case 4:
-	        					employee_name=(String) parameTask[i]; break;
-            			}
-            		}else if(i==5) {
-	        					idManager=(int) parameTask[i]; break;
-            		}else{
-            			return new Risposta("ERRORE", "Formato dati non valido.");
-            		}
+            	// 1. Verifico se il campo attivita essite
+            	if(!richiesta.verificaKey("attivita")) {
+            		return new Risposta("ERRORE","Il campo attivita non esiste");
             	}
+            	// 2. Verifico se il campo attivita è un oggetto di classe Attivita
+            	if(!(richiesta.getParametro("attivita") instanceof Attivita)) {
+            		return new Risposta("ERRORE","Il campo attivita non è un'istanza della classe Attivita");
+            	}
+            	Attivita task=(Attivita) richiesta.getParametro("attivita");
+            	
+            	if(task==null) {
+            		return new Risposta("ERRORE","L'attività passata è null");
+            	}
+            	
+            	// 3. Salvo i dati della attività nelle corispetive variabili
+            	
+            	titolo=(String) task.getTitolo();
+            	descrizione=(String) task.getDescrizione();
+                scadenza=(String) task.getDataScadenza();
+                prioritaStr=task.getPriorita().toString();
+                String employee_name=task.getNominativoEmployee();
+                String department_name=task.getdepartmentName();
+                idManager=task.getIdManager();
                 
-                System.out.println("Titolo: "+titolo);
-                System.out.println("Descrizione: "+descrizione);
-                System.out.println("Priorita: "+prioritaStr);
-                System.out.println("Scadenza: "+scadenza);
-                System.out.println("Nome: "+employee_name);
-                System.out.println("ID manager: "+idManager);
-                                
-                //2. Verifico che i dati non sono nulli
+                // 4. controllo se i dati sono nulli
                 
-                if(titolo==null || descrizione==null || prioritaStr==null || scadenza==null || employee_name==null || idManager==-1) {
-                	return new Risposta("ERRORE","Dati mancanti");
+                if(titolo==null || descrizione==null || scadenza==null || prioritaStr==null || idManager==null) {
+                	return new Risposta("ERRORE","Dati Mancanti!");
                 }
                 
-                String[] dati=employee_name.split(" ");
-                //System.out.println(dati[0]+" "+dati[1]);
-                cognome=dati[0];
-                nome=dati[1];
+                Boolean esito1=false;
                 statoStr="DA_FARE";
-                
-                // 3. Verifico che il dipedente passato esiste e mi ricavo l'id
                 DB.avviaConnessione();
-                idEmployee=DB.verificaEsistenzaUtente("employee",cognome,nome);
-                if(idEmployee==0) {
-                	return new Risposta("ERRORE","Dipendente non trovato");
-                }else if(idEmployee==-1) {
-                	new Risposta("ERRORE","Errore esecuzione della query");
-                }
-                
-                //4. inserico la task sul DB                
-                
-                if(DB.inserisciTask(titolo, descrizione, statoStr, prioritaStr, scadenza, idEmployee, idManager)) {
-                	return new Risposta("OK", "Attività creata");
+                if(employee_name!=null && !employee_name.equals("*")) {
+                	// 5. controllo se l'emplyee con il nominativo passato esiste
+                     idEmployee=DB.verificaEsistenzaUtente("employee",cognome,nome);
+                     if(idEmployee==0) {
+                     	return new Risposta("ERRORE","Dipendente non trovato");
+                     }else if(idEmployee==-1) {
+                     	new Risposta("ERRORE","Errore esecuzione della query");
+                     }
+                     esito1=DB.creaTask(titolo, descrizione, statoStr, prioritaStr, scadenza, idEmployee, idManager,"employee-task");
+                     
+                	
+                }else if(department_name !=null && !department_name.equals("*")) {
+                	// 5. Controllo se il dipartimento con il nominativo passato esiste
+                	idDepartment=DB.verificaEsistenzaDipartimento(department_name);
+                	if(idDepartment==0) {
+                		return new Risposta("ERRORE","Dipartimento non trovato");
+                	}else if(idDepartment==-1) {
+                     	new Risposta("ERRORE","Errore esecuzione della query");
+                     }
+                	// Opzioni per l'aseegnazione della task per un dipartimento
+                	esito1=DB.creaTask(titolo, descrizione, statoStr, prioritaStr, scadenza, idDepartment, idManager,"department-task");
                 }else {
-                	return new Risposta("ERRORE", "Attività non creata");
+                	return new Risposta("ERRORE","idDepatment ed emplyee_name sono null");
                 }
                 
+                // 6. Controllo il  risultato della operazione
+                
+                if(esito1) {
+                	return new Risposta("OK", "Attività creata");
+                }
+                return new Risposta("ERRORE", "Attività non creata");
+                               
             case "GET-EMPOLOYEE":
             	DB.avviaConnessione();
             	// Logica per l'invio dei dipendenti della azienda
@@ -410,7 +411,7 @@ public class GestoreRichiesta {
             		return new Risposta("ERRORE","Autorizzazione negata!");
             	}
             	
-            case "LOAD-ARCHIVIO":
+            /*case "LOAD-ARCHIVIO":
             	DB.avviaConnessione();
             	if(!richiesta.verificaKey("tipoUtente")) {
             		return new Risposta("ERRORE","Tipo Utente non trovato");
@@ -480,7 +481,74 @@ public class GestoreRichiesta {
                     	answer=new Risposta("OK","Attività trovate con successo");
                     	answer.aggiungiParametro("Attivita", listTask);
                     	return answer;
-                    }
+                    }*/
+            case "GET-DEPARTMENT-MANAGER":
+            	if(!richiesta.verificaKey("manager")) {
+            		return new Risposta("ERRORE","Chiave manager mancante");
+            	}
+            	if(!(richiesta.getParametro("manager") instanceof  Manager)) {
+            		return new Risposta("ERRORE","L'utente passato non è di tipo manager");
+            	}
+            	Manager manager=(Manager) richiesta.getParametro("manager");
+            	
+            	query="SELECT * FROM department WHERE id_manager="+manager.getId();
+            	DB.avviaConnessione();
+            	result=DB.eseguiQuery(query);
+            	if(result!=null) {
+            		try {
+            			ArrayList<Department> listaDipartimenti=new ArrayList<>();
+            			Department dipartimento=null;
+                      	 while (result.next()) {
+                      		 id=result.getInt("id");
+                      		 nome=result.getString("nome");
+                      		 descrizione=result.getString("descrizione");
+                      		 idCompany=result.getInt("id_company");
+                      		 dipartimento=new Department(id,nome,descrizione,idCompany,manager.getId());
+                      		 listaDipartimenti.add(dipartimento);
+                      	 }
+                      	 answer=new Risposta("OK","Ricerca dati completata!");
+                      	 if(listaDipartimenti!=null) {
+                      		 answer.aggiungiParametro("dipartimenti", listaDipartimenti);
+                      	 }
+                      	 return answer;
+                       }catch (SQLException e) {
+                               e.printStackTrace();
+                               return new Risposta("ERRORE", "Errore durante il caricamento dei dati");
+                           }
+            	}
+            	return new Risposta("OK","Nessun dipartimento è stato assegnato all'utente");
+            	
+            case "GET-EMPLOYEE-DEPARTMENT":
+            	if(!richiesta.verificaKey("nome_dipartimento")) {
+            		return new Risposta("ERRORE","Chiave nome_dipartimento mancante");
+            	}
+            	String nomeDipartimento=(String) richiesta.getParametro("nome_dipartimento");
+            	
+            	query="SELECT e.* FROM employee e INNER JOIN department d ON e.id_department=d.id WHERE d.nome='"+nomeDipartimento+"'";
+            	DB.avviaConnessione();
+            	result=DB.eseguiQuery(query);
+            	if(result!=null) {
+            		try {
+            			ArrayList<Employee> listaDipendenti=new ArrayList<>();
+            			//Employee dipendente=null;
+                      	 while (result.next()) {
+                      		 id=result.getInt("id");
+                      		 nome=result.getString("nome");
+                      		 cognome=result.getString("cognome");
+                      		 
+                      		 dipendente=new Employee(id,nome,cognome);
+                      		listaDipendenti.add(dipendente);
+                      	 }
+                      	 answer=new Risposta("OK","Ricerca dati completata!");
+                      	 if(listaDipendenti!=null) {
+                      		 answer.aggiungiParametro("dipendenti", listaDipendenti);
+                      	 }
+                      	 return answer;
+                       }catch (SQLException e) {
+                               e.printStackTrace();
+                               return new Risposta("ERRORE", "Errore durante il caricamento dei dati");
+                           }
+            	}
 
             default:
                 return new Risposta("ERRORE", "Richiesta non riconosciuta");
@@ -497,13 +565,6 @@ public class GestoreRichiesta {
         }
         return parametri;
     }
-
-    // private static void stampaParametri(final Object[] parametri, final int numberOfParametri) {
-    //     int j = 0;
-    //     for (int i = 0; i < numberOfParametri; i++) {
-    //         System.out.println(parametri[i]);
-    //     }
-    // }
     
     private static HashMap<String, Object> VerificaCredenzialiUtente(String email, String password, Database DB) {
         HashMap<String, Object> info = new HashMap<>();
@@ -614,7 +675,7 @@ public class GestoreRichiesta {
         return id;        
     }
     
-    private static int getIdCompany(String tipo_utente, int id, Database DB) {
+    /*private static int getIdCompany(String tipo_utente, int id, Database DB) {
     	String query=null;
     	if(tipo_utente.equals("employee")){
     		query="SELECT id_company FROM employee WHERE id='"+id+"'";
@@ -645,5 +706,5 @@ public class GestoreRichiesta {
                  }
     	 }
 		return -1;
-    }
+    }*/
 }

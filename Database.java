@@ -115,25 +115,72 @@ public class Database {
             }
         }
     }
+    
+    public int verificaEsistenzaDipartimento(String nomeDipartimento) {
+    	PreparedStatement stmt = null;
+		ResultSet result = null;
+		try {
+            if (conn == null || conn.isClosed()) {
+                avviaConnessione();
+            }
 
-    public Boolean inserisciTask(String titolo, String descrizione, String stato, String priorita, String scadenza, int idEmployee, int idManager) {
+            if (nomeDipartimento == null) {
+                throw new IllegalArgumentException("Errore: il nome del dipartimento è null.");
+            }
+
+            String query = "SELECT id FROM department WHERE nome = ?";
+            stmt = conn.prepareStatement(query);
+            stmt.setString(1, nomeDipartimento);
+
+            result = stmt.executeQuery();
+
+            if (result.next()) {
+                return result.getInt("id");
+            } else {
+                return 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Errore nell'esecuzione della query:");
+            e.printStackTrace();
+            return -1;
+        } finally {
+            try {
+                if (result != null) result.close();
+                if (stmt != null) stmt.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public Boolean creaTask(String titolo, String descrizione, String stato, String priorita, String scadenza, Integer idGeneric, Integer idManager,String tipo) {
         PreparedStatement pstmt = null;
         try {
             if (conn == null || conn.isClosed()) {
                 avviaConnessione();
             }
-            String query = "INSERT INTO attivita (titolo, descrizione, stato, priorita, scadenza, id_employee, id_manager) VALUES (?,?,?,?,?,?,?)";
+            String query=null;
+           switch(tipo) {
+            	case "employee-task":
+	            	query="INSERT INTO attivita (titolo, descrizione, stato, priorita, scadenza, id_employee, id_manager) VALUES (?,?,?,?,?,?,?)";break;
+            	case "department-task":
+            		query="INSERT INTO attivita (titolo, descrizione, stato, priorita, scadenza, id_department, id_manager) VALUES (?,?,?,?,?,?,?)";break;
+            	default:
+            		System.err.println("Tipo attività non riconosciuto: " + tipo);
+            		return false;
+            }
             pstmt = conn.prepareStatement(query);
             pstmt.setString(1, titolo);
-            pstmt.setString(2, descrizione);
-            pstmt.setString(3, stato);
-            pstmt.setString(4, priorita);
-            pstmt.setString(5, scadenza);
-            pstmt.setInt(6, idEmployee);
-            pstmt.setInt(7, idManager);
-
-            int numRows = pstmt.executeUpdate();
-            return numRows > 0;
+        	pstmt.setString(2, descrizione);
+        	pstmt.setString(3, stato);
+        	pstmt.setString(4, priorita);
+        	pstmt.setString(5, scadenza);
+        	pstmt.setInt(6, idGeneric);
+        	pstmt.setInt(7, idManager);
+        	int numRows = pstmt.executeUpdate();
+            
+        	return numRows > 0;
+          
         } catch (Exception e) {
             System.err.println("Errore nell'esecuzione della query:");
             e.printStackTrace();
