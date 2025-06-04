@@ -13,7 +13,7 @@ public class GestoreRichiesta {
 
 	public static Risposta process(Richiesta richiesta) {
         String tipo = richiesta.getTipo();
-        System.out.println(tipo);
+        System.out.println("Nuova richiesta "+ tipo);
         Database DB=new Database();
         String query;
         ResultSet result;
@@ -23,6 +23,7 @@ public class GestoreRichiesta {
 		String scadenza=null;
         Utente user = null;
         Integer id, idManager, idEmployee, idDepartment,idCompany;
+        ArrayList<Attivita> elencoAttivita=new ArrayList<>();
 		switch (tipo) {
             case "SING-UP":
             	DB.avviaConnessione();
@@ -56,7 +57,6 @@ public class GestoreRichiesta {
             		return new Risposta("ERRORE", "Dati mancanti!");
             	}
 
-            	//System.out.println(tipo_utente);
                 // Verfico se il tipo di utente passato è valido (empoyee o manager)
             	if(!tipo_utente.equals("employee") && !tipo_utente.equals("manager")) {
             		return new Risposta("ERRORE", "Tipo Utente non valido!");
@@ -127,7 +127,6 @@ public class GestoreRichiesta {
                                       
                     switch (tipoUtente) {
                         case "employee":
-                            System.out.println("Sono dentro employee");
                             id = (Integer) infoUser.get("id");
                             nome = (String) infoUser.get("nome");
                             cognome = (String) infoUser.get("cognome");
@@ -142,7 +141,6 @@ public class GestoreRichiesta {
                             return answer; 
 
                         case "manager":
-                            System.out.println("Sono dentro manager!");
                             id = (Integer) infoUser.get("id");
                             nome = (String) infoUser.get("nome");
                             cognome = (String) infoUser.get("cognome");
@@ -156,7 +154,6 @@ public class GestoreRichiesta {
                             return answer; 
                             
                         case "director":
-                            System.out.println("Sono dentro director");
                             id = (Integer) infoUser.get("id");
                             nome = (String) infoUser.get("nome");
                             cognome = (String) infoUser.get("cognome");
@@ -170,7 +167,6 @@ public class GestoreRichiesta {
                             answer.aggiungiParametro("utente", user);
                             return answer; 
                         case "admin":
-                            System.out.println("Sono dentro admin");
                             id = (Integer) infoUser.get("id");
                             nome = (String) infoUser.get("nome");
                             cognome = (String) infoUser.get("cognome");
@@ -203,20 +199,19 @@ public class GestoreRichiesta {
             	}
             	
             	tipo_utente=(String) user.getRuolo();
-            	ArrayList<Attivita> elencoAttivita=new ArrayList<>();
             	            	
             	if(tipo_utente.equals("employee")) {
             		if(!richiesta.verificaKey("idDepartment")) {
             			return new Risposta("ERRORE","idDeparment mancante!");
             		}
             		idDepartment=(Integer) richiesta.getParametro("idDepartment");
-            		query="SELECT * FROM attivita WHERE id_employee="+user.getId()+" OR id_department="+idDepartment;
+            		query="SELECT * FROM attivita WHERE (id_employee="+user.getId()+" OR id_department="+idDepartment+") AND !stato='COMPLETATA'";
             	}else if(tipo_utente.equals("manager")) {
             		query="SELECT a.*, e.nome AS nome_dipendente, e.cognome AS cognome_dipendente, d.nome AS nome_dipartimento "
             				+ "FROM attivita a "
             				+ "LEFT JOIN employee e ON a.id_employee = e.id "
             				+ "LEFT JOIN department d ON e.id_department = d.id "
-            				+ "WHERE d.id_manager ="+(int) user.getId()+" OR a.id_employee IS NULL";
+            				+ "WHERE (d.id_manager ="+(int) user.getId()+" OR a.id_employee IS NULL )AND !a.stato='COMPLETATA'";
             	}else if(tipo_utente.equals("dirctor")){
             		query="SELECT a.* FROM attivita a JOIN department d ON a.id_department=d.id WHERE d.id_dirctor="+user.getId();
             	}else if(tipo_utente.equals("admin")) {
@@ -228,7 +223,6 @@ public class GestoreRichiesta {
             	result=DB.eseguiQuery(query);
             	
             	 if (result != null) {
-            		 //System.out.println("Sono dentro l'if");
                      try {
                     	 Attivita attivita1 = null;
                     	 while (result.next()) {
@@ -270,7 +264,6 @@ public class GestoreRichiesta {
                      	answer.aggiungiParametro("Attivita", elencoAttivita);
                      	return answer;
                      }
-                     //return new Risposta("OK","Nessuna Attività trovata");
 
             case "AGGIUNGI ATTIVITA":
             	// 1. Verifico se il campo attivita essite
@@ -337,39 +330,9 @@ public class GestoreRichiesta {
                 	return new Risposta("OK", "Attività creata");
                 }
                 return new Risposta("ERRORE", "Attività non creata");
-                               
-            case "GET-EMPOLOYEE":
-            	DB.avviaConnessione();
-            	// Logica per l'invio dei dipendenti della azienda
-            	idCompany=(int) richiesta.getParametro("id_company");
-            	query="SELECT * FROM employee WHERE id_company="+idCompany;
-            	
-            	result=DB.eseguiQuery(query);
-            	ArrayList<Employee> employeeList=new ArrayList<Employee>();
-            	Employee dipendente;
-            	if(result!=null) {
-            		try {
-            			while(result.next()) {
-            				id=result.getInt("id");
-            				nome=result.getString("nome");
-            				cognome=result.getString("cognome");
-            				dipendente=new Employee(id,nome,cognome);
-            				employeeList.add(dipendente);
-            			}
-            			answer=new Risposta("OK", "Dipendenti Trovati!");
-            			answer.aggiungiParametro("dipendenti", employeeList);
-            			answer.stampaKeys();
-            			return answer;
-            		} catch(SQLException e) {
-                        e.printStackTrace();
-                        return new Risposta("ERRORE", "Errore durante la lettura dei dati o dipendenti mancanti");
-                    }
-            	}
-            	return new Risposta("ERRORE","Non ci sono dipendenti nel DB con id_company"+idCompany);
-            
+				
             case "UPDATE-ATTIVITA":
             	DB.avviaConnessione();
-            	//System.out.println("Sono dentro Upadate");
             	if(!richiesta.verificaKey("tipoUtente")) {
             		return new Risposta("ERRORE","Tipo Utente non trovato");
             	}
@@ -389,12 +352,11 @@ public class GestoreRichiesta {
             		return new Risposta("OK","Attivita Aggiornata con successo!");
             		
             	}else if(tipoUtente.equals("manager")) {
-            		//System.out.println("Operazzioni Manager");
             		if(!richiesta.verificaKey("attivita")) {
             			return new Risposta("ERRORE","Attivita non trovata");
             		}
             		
-            		Attivita task=(Attivita) richiesta.getParametro("attivita");
+            		task=(Attivita) richiesta.getParametro("attivita");
             		
             		// Verificho se l'attivita è null
             		
@@ -411,77 +373,85 @@ public class GestoreRichiesta {
             		return new Risposta("ERRORE","Autorizzazione negata!");
             	}
             	
-            /*case "LOAD-ARCHIVIO":
+            case "LOAD-ARCHIVIO":
             	DB.avviaConnessione();
-            	if(!richiesta.verificaKey("tipoUtente")) {
-            		return new Risposta("ERRORE","Tipo Utente non trovato");
+            	if(!richiesta.verificaKey("utente")) {
+            		return new Risposta("ERRORE","La chiave utente non trovata");
+            	}
+            	user=(Utente) richiesta.getParametro("utente");
+            	if(user.getRuolo()==null) {
+            		return new Risposta("ERRORE","Il tipo utente è null");
             	}
             	
-            	tipoUtente=richiesta.getParametro("tipoUtente").toString();
-            	if(tipoUtente.equals("employee")) {
-            		// Verifico se esiste l'id
-            		if(!richiesta.verificaKey("id")) {
-            			return new Risposta("ERRORE","ID mancante!");
+            	tipo_utente=(String) user.getRuolo();
+            	            	            	
+            	if(tipo_utente.equals("employee")) {
+            		if(!richiesta.verificaKey("idDepartment")) {
+            			return new Risposta("ERRORE","idDeparment mancante!");
             		}
-            		id=(int) richiesta.getParametro("id");
-            		System.out.println(id);
-            		query="SELECT * FROM attivita WHERE id_employee="+id+" AND stato='COMPLETATA'";
-            	}else if(tipoUtente.equals("manager")) {
-            		// Verifico l'esistenza del id Company
-            		
-            		if(!richiesta.verificaKey("id company")) {
-            			return new Risposta("ERRORE","ID mancante!");
-            		}
-            		System.out.println(id);
-            		id=(int) richiesta.getParametro("id company");
-            		query = "SELECT * FROM attivita a INNER JOIN employee e ON a.id_employee = e.id WHERE e.id_company = " + id + " AND a.stato = 'COMPLETATA'";
-
-            		//query="SELECT * FROM attivita a INNER JOIN employee e ON a.id=e.id_company WHERE e.id_company="+id+" AND a.stato='COMPLETATA'";
-            	}else if(tipoUtente.equals("admin")){
+            		idDepartment=(Integer) richiesta.getParametro("idDepartment");
+            		query="SELECT * FROM attivita WHERE (id_employee="+user.getId()+" OR id_department="+idDepartment+") AND stato='COMPLETATA'";
+            	}else if(tipo_utente.equals("manager")) {
+            		query="SELECT a.*, e.nome AS nome_dipendente, e.cognome AS cognome_dipendente, d.nome AS nome_dipartimento "
+            				+ "FROM attivita a "
+            				+ "LEFT JOIN employee e ON a.id_employee = e.id "
+            				+ "LEFT JOIN department d ON e.id_department = d.id "
+            				+ "WHERE (d.id_manager ="+(int) user.getId()+" OR a.id_employee IS NULL) AND a.stato='COMPLETATA'";
+            	}else if(tipo_utente.equals("dirctor")){
+            		query="SELECT a.* FROM attivita a JOIN department d ON a.id_department=d.id WHERE d.id_dirctor="+user.getId()+"AND a.stato='COMPLETATA'";
+            	}else if(tipo_utente.equals("admin")) {
             		query="SELECT * FROM attivita WHERE stato='COMPLETATA'";
             	}else {
-            		return new Risposta("ERRORE","Autorizzazione negata!");
+            		return new Risposta("ERRORE", "Tipo di utente non valido");
             	}
-            	ArrayList<Attivita> listTask=new ArrayList<>();
-            	//System.out.println(query);
+            	DB.avviaConnessione();
             	result=DB.eseguiQuery(query);
-                if (result != null) {
-                	System.out.println("Sono dentro il primo if");
-                    try {
-                   	 Attivita attivita1 = null;
-                   	 while (result.next()) {
-                   		 System.out.println("Sono dentro il while");
-                   	     id = result.getInt("id");
-                   	     titolo = result.getString("titolo");
-                   	     descrizione = result.getString("descrizione");
-                   	     prioritaStr = result.getString("priorita");
-                   	     statoStr = result.getString("stato");
-                   	     scadenza = result.getString("scadenza");
-                   	     idDepartment=result.getInt("id_department");
+            	
+            	 if (result != null) {
+                     try {
+                    	 Attivita attivita1 = null;
+                    	 while (result.next()) {
+                    		    id = result.getInt("id");
+                    		    titolo = result.getString("titolo");
+                    		    descrizione = result.getString("descrizione");
+                    		    prioritaStr = result.getString("priorita");
+                    		    statoStr = result.getString("stato");
+                    		    scadenza = result.getString("scadenza");
+                    		    
+                    		    TipoPriorita priorita = TipoPriorita.valueOf(prioritaStr.toUpperCase());
+                    		    StatoAttivita stato = StatoAttivita.valueOf(statoStr.toUpperCase());
+                    		    idManager = result.getInt("id_manager");
 
-                   	     Integer idManager1 = result.getInt("id_manager");
-                   	     Integer idEmployee1 = result.getInt("id_employee");
+                    		    idEmployee = result.getInt("id_employee");
+                    		    if (result.wasNull()) idEmployee = null;
 
-                   	     // Conversione stringa -> enum
-                   	     TipoPriorita priorita = TipoPriorita.valueOf(prioritaStr.toUpperCase());
-                   	     StatoAttivita stato = StatoAttivita.valueOf(statoStr.toUpperCase());
-                   	     
-                   	     // Creazione oggetto
+                    		    idDepartment = result.getInt("id_department");
+                    		    if (result.wasNull()) idDepartment = null;
 
-                   	     attivita1 = new Attivita(id, titolo, descrizione, scadenza, idManager1, idEmployee1,idDepartment, priorita,stato);
-                   	                      	     
-                   	  listTask.add(attivita1);
-                   	 }
-                    }catch (SQLException e) {
-                            e.printStackTrace();
-                            return new Risposta("ERRORE", "Errore durante il caricamento dei dati");
-                        }
-           	 }  
-                    if(listTask!=null) {
-                    	answer=new Risposta("OK","Attività trovate con successo");
-                    	answer.aggiungiParametro("Attivita", listTask);
-                    	return answer;
-                    }*/
+                    		   if (idEmployee != null || idDepartment!= null) {
+                    		        attivita1 = new Attivita(
+                    		            id, titolo, descrizione, scadenza,
+                    		            idManager, idEmployee, idDepartment,
+                    		            priorita, stato
+                    		        );
+                    		        elencoAttivita.add(attivita1);
+                    		    } else {
+                    		        return new Risposta("ERRORE", "Attività priva sia di id_employee che di id_department");
+                    		    }
+                    		}                 	    
+                    	 }catch (SQLException e) {
+                             e.printStackTrace();
+                             return new Risposta("ERRORE", "Errore durante il caricamento dei dati");
+                         }
+            	 	}  
+                     if(elencoAttivita!=null) {
+                     	answer=new Risposta("OK","Attività trovate con successo");
+                     	answer.aggiungiParametro("Attivita", elencoAttivita);
+                     	return answer;
+                     }
+            	
+            	
+            	
             case "GET-DEPARTMENT-MANAGER":
             	if(!richiesta.verificaKey("manager")) {
             		return new Risposta("ERRORE","Chiave manager mancante");

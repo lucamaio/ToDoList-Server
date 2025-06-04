@@ -48,7 +48,6 @@ public class Database {
                 avviaConnessione();
             }
             String query;
-            System.out.println("Inserisci User | Tipo Utente: " + tipo_utente);
             if ("employee".equals(tipo_utente)) {
                 query = "INSERT INTO employees (nome, cognome, email, password, id_company) VALUES (?,?,?,?,?)";
             } else {
@@ -221,20 +220,35 @@ public class Database {
 
     public Boolean updateAttivita(Attivita attivita) {
         PreparedStatement pstmt = null;
+        String query=null;
         try {
             if (conn == null || conn.isClosed()) {
                 avviaConnessione();
             }
-            String query = "UPDATE attivita SET titolo=?, descrizione=?, scadenza=?, stato=?, priorita=?, id_employee=? WHERE id=?";
-            pstmt = conn.prepareStatement(query);
-            pstmt.setString(1, attivita.getTitolo());
-            pstmt.setString(2, attivita.getDescrizione());
-            pstmt.setString(3, attivita.getDataScadenza());
-            pstmt.setString(4, attivita.getStato().toString());
-            pstmt.setString(5, attivita.getPriorita().toString());
-            pstmt.setInt(6, attivita.getIdEmployee());
-            pstmt.setInt(7, attivita.getId());
-
+            if(attivita.getIdEmployee()!=null) {
+            	 query = "UPDATE attivita SET titolo=?, descrizione=?, scadenza=?, stato=?, priorita=?, id_employee=? WHERE id=?";
+            	 pstmt = conn.prepareStatement(query);
+                 pstmt.setString(1, attivita.getTitolo());
+                 pstmt.setString(2, attivita.getDescrizione());
+                 pstmt.setString(3, attivita.getDataScadenza());
+                 pstmt.setString(4, attivita.getStato().toString());
+                 pstmt.setString(5, attivita.getPriorita().toString());
+                 pstmt.setInt(6, attivita.getIdEmployee());
+                 pstmt.setInt(7, attivita.getId());
+            }else if(attivita.getIdDepartment()!=null) {
+            	query = "UPDATE attivita SET titolo=?, descrizione=?, scadenza=?, stato=?, priorita=?, id_department=? WHERE id=?";
+           	 	pstmt = conn.prepareStatement(query);
+                pstmt.setString(1, attivita.getTitolo());
+                pstmt.setString(2, attivita.getDescrizione());
+                pstmt.setString(3, attivita.getDataScadenza());
+                pstmt.setString(4, attivita.getStato().toString());
+                pstmt.setString(5, attivita.getPriorita().toString());
+                pstmt.setInt(6, attivita.getIdDepartment());
+                pstmt.setInt(7, attivita.getId());
+            }else {
+            	throw new Exception("ID Emplyee e ID Department sono null");
+            }
+                      
             int righeModificate = pstmt.executeUpdate();
             return righeModificate > 0;
         } catch (Exception e) {
