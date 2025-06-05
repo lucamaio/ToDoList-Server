@@ -213,9 +213,9 @@ public class GestoreRichiesta {
             				+ "LEFT JOIN department d ON e.id_department = d.id "
             				+ "WHERE (d.id_manager ="+(int) user.getId()+" OR a.id_employee IS NULL )AND !a.stato='COMPLETATA'";
             	}else if(tipo_utente.equals("dirctor")){
-            		query="SELECT a.* FROM attivita a JOIN department d ON a.id_department=d.id WHERE d.id_dirctor="+user.getId();
+            		query="SELECT a.* FROM attivita a JOIN department d ON a.id_department=d.id WHERE d.id_dirctor="+user.getId()+" AND !a.stato='COMPLETATA'";
             	}else if(tipo_utente.equals("admin")) {
-            		query="SELECT * FROM attivita";
+            		query="SELECT * FROM attivita WHERE !stato='COMPLETATA'";
             	}else {
             		return new Risposta("ERRORE", "Tipo di utente non valido");
             	}
@@ -289,7 +289,6 @@ public class GestoreRichiesta {
                 String employee_name=task.getNominativoEmployee();
                 String department_name=task.getdepartmentName();
                 idManager=task.getIdManager();
-                
                 // 4. controllo se i dati sono nulli
                 
                 if(titolo==null || descrizione==null || scadenza==null || prioritaStr==null || idManager==null) {
@@ -300,6 +299,10 @@ public class GestoreRichiesta {
                 statoStr="DA_FARE";
                 DB.avviaConnessione();
                 if(employee_name!=null && !employee_name.equals("*")) {
+                	System.out.println(employee_name);
+                	 String[] dati=employee_name.split(" ");
+                     cognome=dati[0];
+                     nome=dati[1];
                 	// 5. controllo se l'emplyee con il nominativo passato esiste
                      idEmployee=DB.verificaEsistenzaUtente("employee",cognome,nome);
                      if(idEmployee==0) {
@@ -450,8 +453,6 @@ public class GestoreRichiesta {
                      	return answer;
                      }
             	
-            	
-            	
             case "GET-DEPARTMENT-MANAGER":
             	if(!richiesta.verificaKey("manager")) {
             		return new Risposta("ERRORE","Chiave manager mancante");
@@ -506,7 +507,7 @@ public class GestoreRichiesta {
                       		 nome=result.getString("nome");
                       		 cognome=result.getString("cognome");
                       		 
-                      		 dipendente=new Employee(id,nome,cognome);
+                      		 Employee dipendente = new Employee(id,nome,cognome);
                       		listaDipendenti.add(dipendente);
                       	 }
                       	 answer=new Risposta("OK","Ricerca dati completata!");
@@ -519,6 +520,47 @@ public class GestoreRichiesta {
                                return new Risposta("ERRORE", "Errore durante il caricamento dei dati");
                            }
             	}
+            	
+            case "GET-COMPANY-DIRECTOR":
+            	// 1. Verifico se la chiave esiste in modo da poter effetuare le operazioni successive
+            	if(!richiesta.verificaKey("director")) {
+            		return new Risposta("ERRORE","Chiave director mancante");
+            	}
+            	Director director=(Director) richiesta.getParametro("director");
+            	//2. controllo se l'oggetto passato è != null
+            	if(director==null) {
+            		return new Risposta("ERRORE","director is null");          		
+            	}
+            	            	
+            	// 3. Avvio la connessione con il DB ed eseguo la query
+            	DB.avviaConnessione();
+            	query="SELECT * FROM company WHERE id="+(int) director.getIdCompany()+"";
+            	result=DB.eseguiQuery(query);
+            	if(result!=null) {
+            		try {
+                      	 while (result.next()) {
+                      		 id=result.getInt("id");
+                      		 nome=result.getString("nome");
+                      		 descrizione=result.getString("descrizione");
+                      		 email=result.getString("email");
+                      		 
+                      		String indirizzo=result.getString("indirizzo");
+                      		String telefono=result.getString("telefono");
+                      		
+                      		Company azienda=new Company(id,nome,descrizione,indirizzo,email,telefono);
+                      		 answer=new Risposta("OK","Ricerca dati completata!");
+                          	 if(azienda!=null) {
+                          		 answer.aggiungiParametro("azienda", azienda);
+                          	 }
+                          	 return answer;
+                      	 }
+                      	
+                       }catch (SQLException e) {
+                               e.printStackTrace();
+                               return new Risposta("ERRORE", "Errore durante il caricamento dei dati");
+                           }
+            	}
+            	
 
             default:
                 return new Risposta("ERRORE", "Richiesta non riconosciuta");
