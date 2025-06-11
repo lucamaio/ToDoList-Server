@@ -262,6 +262,35 @@ public class Database {
             }
         }
     }
+    
+    public Boolean updateAzienda(Company azienda) {
+        PreparedStatement pstmt = null;
+        try {
+            if (conn == null || conn.isClosed()) {
+                avviaConnessione();
+            }
+            String query = "UPDATE company SET nome=?, descrizione=?, indirizzo=?, telefono=?, email=? WHERE id=?";
+            pstmt = conn.prepareStatement(query);
+            pstmt.setString(1, azienda.getNome());
+            pstmt.setString(2, azienda.getDescrizione());
+            pstmt.setString(3, azienda.getIndirizzo());
+            pstmt.setString(4, azienda.getTelefono());
+            pstmt.setString(5, azienda.getEmail());
+            pstmt.setInt(6, azienda.getId());
+
+            int righeModificate = pstmt.executeUpdate();
+            return righeModificate > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            try {
+                if (pstmt != null) pstmt.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
     public void chiudiConnessione() {
         try {

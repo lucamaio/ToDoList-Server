@@ -561,7 +561,62 @@ public class GestoreRichiesta {
                            }
             	}
             	
-
+            case "UPDATE-COMPANY":
+            	//1. verifico l'esistenza della azienda
+            	if(!richiesta.verificaKey("azienda")) {
+            		return new Risposta("ERRORE","Chiave azienda mancante");
+            	}
+            	
+            	Company azienda=(Company) richiesta.getParametro("azienda");
+            	if(DB.updateAzienda(azienda)) {
+            		return new Risposta("OK","Dati Azienda aggiornati con successo");
+            	}else {
+            		return new Risposta("ERRORE","Errore durante l'esecuzione della query");
+            	}
+            	
+            case "LOAD-DEPARTMENT":
+            		// 1. verifico l'esistenza del utente director
+            	if(!richiesta.verificaKey("utente")) {
+            		return new Risposta("ERRORE","Chiave utente mancante");
+            	}
+            	Director direttore=(Director) richiesta.getParametro("utente");
+            	// 2. Controllo se il direttore è null
+            	if(direttore==null) {
+            		return new Risposta("ERRORE","Utente è null");
+            	}
+            	// 3. COntrollo se idCompany è null
+            	if((Integer) direttore.getIdCompany()==null)
+					return new Risposta("ERRORE","ID Company è null");
+            	idCompany=direttore.getIdCompany();
+            	//
+            	DB.avviaConnessione();
+            	query="SELECT * FROM department WHERE id_company="+idCompany;
+            	result=DB.eseguiQuery(query);
+            	ArrayList<Department> listaDipartimenti=new ArrayList<>();
+            	if(result!=null) {
+            		try {
+                      	 while (result.next()) {
+                      		 id=result.getInt("id");
+                      		 nome=result.getString("nome");
+                      		 descrizione=result.getString("descrizione");
+                      		 password= result.getString("password");
+                      		 idManager=result.getInt("id_manager");
+                      		 
+                      		 Department dipartimento=new Department(id,nome,descrizione,idCompany,idManager,password);
+                      		 listaDipartimenti.add(dipartimento);
+                      	 }
+                  		 answer=new Risposta("OK","Ricerca dati completata!");
+                      	 if(listaDipartimenti!=null) {
+                      		 answer.aggiungiParametro("dipartimenti", listaDipartimenti);
+                      	 }
+                      	 return answer;
+                      	 }catch (SQLException e) {
+                               e.printStackTrace();
+                               return new Risposta("ERRORE", "Errore durante il caricamento dei dati");
+                           }
+            	}
+            	return new Risposta("OK","Nessun dipartimento è stato trovato");
+            	
             default:
                 return new Risposta("ERRORE", "Richiesta non riconosciuta");
         }
