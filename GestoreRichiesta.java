@@ -13,12 +13,12 @@ public class GestoreRichiesta {
 
 	public static Risposta process(Richiesta richiesta) {
         String tipo = richiesta.getTipo();
-        System.out.println("Nuova richiesta "+ tipo);
+        System.out.println("Nuova richiesta sul server: "+ tipo);
         Database DB=new Database();
         String query;
         ResultSet result;
         Risposta answer=null;
-        String nome=null,cognome=null, password=null,email=null,attivita=null,tipo_utente=null;
+        String nome=null,cognome=null, password=null,email=null,tipo_utente=null;
         String titolo=null,descrizione=null,statoStr=null,prioritaStr=null;
 		String scadenza=null;
         Utente user = null;
@@ -28,10 +28,12 @@ public class GestoreRichiesta {
             case "SING-UP":
             	DB.avviaConnessione();
             	
-            	String[] keysSingUP= {"nome","cognome","email","password","attivita","tipo utente"};
-            	Object[] parametriSingUP = leggiParametri(6,keysSingUP,richiesta);    
-            	            	
-            	for(int i=0;i<6;i++) {
+            	// 1. Salvo i dati ricevuti
+            	String[] keysSingUP= {"nome","cognome","email","password","password-dipartimento"};
+            	Object[] parametriSingUP = leggiParametri(5,keysSingUP,richiesta);    
+            	String passwordDipartimento=null;
+            	
+            	for(int i=0;i<5;i++) {
             		if(parametriSingUP[i] instanceof String){
             			switch (i) {
 	            			case 0:
@@ -43,47 +45,62 @@ public class GestoreRichiesta {
 	        				case 3: 
 	        					password=(String) parametriSingUP[i]; break;
 	        				case 4:
-	        					attivita=(String) parametriSingUP[i]; break;
-	        				case 5:
-	        					tipo_utente=(String) parametriSingUP[i]; break;
+	        					passwordDipartimento=(String) parametriSingUP[i]; break;
             			}
             		}else{
             			return new Risposta("ERRORE", "Formato dati non valido.");
             		}
             	}
             	
-            	// Verifico se i dati non sono nulli
-            	if(nome==null ||cognome==null || email==null || password==null || attivita==null || tipo_utente==null) {
+            	// 2. Verifico se i dati non sono nulli
+            	if(nome==null ||cognome==null || email==null || password==null || passwordDipartimento==null) {
             		return new Risposta("ERRORE", "Dati mancanti!");
             	}
+            	
+            	// 4. Verifico se l'indirizzo email è valido
+            	
+            	boolean contieneChiocciola = email.contains("@");   // Questa funzione verifica se un char passato come parametro è presente nella stringa
+            	boolean contieneDominioValido = email.endsWith(".it") || email.endsWith(".com"); // funzione che verifica se la stringa termina con la stringa passata come parametro
 
-                // Verfico se il tipo di utente passato è valido (empoyee o manager)
-            	if(!tipo_utente.equals("employee") && !tipo_utente.equals("manager")) {
-            		return new Risposta("ERRORE", "Tipo Utente non valido!");
-            	}
-                
-                // 1. Verifico se l'utente esiste
+            	if (!contieneChiocciola || !contieneDominioValido) {
+            	    return new Risposta("ERRORE", "Indirizzo email non valido!");
+            	}            	            	
+                                
+                // 5. Verifico se l'utente esiste già
                 if(esisteUtente(email,DB)){
                     return new Risposta("ERRORE","Questo Utente è presente nel DB");
-                }
-                // 2. Verifico se la company esiste
-                id=esisteCompany(attivita,DB);
-                if(id==-2){
-                    return new Risposta("ERRORE","Company non trovata.");
-                }else if(id==-1){
-                    return new Risposta("ERRORE","Errore nella ricerca della company");
-                }
-                // 3. Aggiungere controlli password ed email
+                }               
+                                
+                // 6. Verifico la password del dipartimento
+                int idDipartimento=DB.verificaPasswordDipartimento(passwordDipartimento);
                 
-                //  .....
-
-                // 4. Protezione Password
+                if(idDipartimento==0 || idDipartimento==-1) {
+                	return new Risposta("ERRORE","Password dipartimento sbagliata.");
+                }
                 
-                // ...
-
-                // 5. Salvatagio dei dati
-
-                if(DB.inserisciUser(nome,cognome, email, password, id, tipo_utente)) {
+                //7. Verifico la password
+                
+                boolean passwordSize=password.length()>=8;
+                String simboliConsentiti = "!@.#?#,&$>*<+-_:/()%€{}§^'"; // per leggibilità
+                boolean contieneSimbolo = false;
+                for (char c : simboliConsentiti.toCharArray()) {
+                    if (password.contains(String.valueOf(c))) {
+                        contieneSimbolo = true;
+                        break;
+                    }
+                }
+                
+                boolean contieneNumero = password.matches(".*\\d.*"); 
+                
+                if (!passwordSize || !contieneSimbolo || !contieneNumero) {
+                    return new Risposta("ERRORE", "Password non valida! Deve contenere 8 caratteri, almeno un simbolo e un numero.");
+                }
+                
+                // 8. Creo l'utente nel DB
+                tipo_utente="employee";
+                //System.out.println(idDipartimento);
+              
+                if(DB.inserisciUser(nome,cognome, email, password, idDipartimento, tipo_utente)) {
                     return new Risposta("OK", "Account creato");
                 }else {
                     return new Risposta("ERRORE","Errore durante la creazione del utente!");
@@ -205,6 +222,7 @@ public class GestoreRichiesta {
             			return new Risposta("ERRORE","idDeparment mancante!");
             		}
             		idDepartment=(Integer) richiesta.getParametro("idDepartment");
+            		System.out.println(idDepartment);
             		query="SELECT * FROM attivita WHERE (id_employee="+user.getId()+" OR id_department="+idDepartment+") AND !stato='COMPLETATA'";
             	}else if(tipo_utente.equals("manager")) {
             		query="SELECT a.*, e.nome AS nome_dipendente, e.cognome AS cognome_dipendente, d.nome AS nome_dipartimento "
@@ -616,7 +634,38 @@ public class GestoreRichiesta {
                            }
             	}
             	return new Risposta("OK","Nessun dipartimento è stato trovato");
-            	
+            case "GET-MANAGER-COMPANY":
+            	if(!richiesta.verificaKey("idCompany")) {
+            		return new Risposta("ERRORE","Chiave idCompany mancante");
+            	}
+            	id=(Integer) richiesta.getParametro("idCompany");
+            	query="SELECT DISTINCT m.* FROM manager m LEFT JOIN department d ON m.id = d.id_manager "
+            			+ "AND d.id_company ="+id;
+            	result=DB.eseguiQuery(query);
+            	System.out.println("Query eseguita");
+            	ArrayList<Manager> listaManager=new ArrayList<>();
+            	if(result!=null) {
+            		System.out.println("result!=null");
+            		try {
+                      	 while (result.next()) {
+                      		 id=result.getInt("id");
+                      		 nome=result.getString("nome");
+                      		 cognome=result.getString("cognome");
+                      		 
+                      		 manager=new Manager(id,nome,cognome);
+                      		 listaManager.add(manager);
+                      	 }
+                  		 answer=new Risposta("OK","Ricerca dati completata!");
+                      	 if(listaManager!=null) {
+                      		 answer.aggiungiParametro("manager", listaManager);
+                      	 }
+                      	 return answer;
+                      	 }catch (SQLException e) {
+                               e.printStackTrace();
+                               return new Risposta("ERRORE", "Errore durante il caricamento dei dati");
+                           }
+            	}
+            	return new Risposta("OK","Nessun Manager è stato trovato!");
             default:
                 return new Risposta("ERRORE", "Richiesta non riconosciuta");
         }

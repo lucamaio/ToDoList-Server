@@ -41,7 +41,7 @@ public class Database {
         }
     }
 
-    public Boolean inserisciUser(String nome, String cognome, String email, String password, int id_company, String tipo_utente) {
+    public Boolean inserisciUser(String nome, String cognome, String email, String password, int id_department, String tipo_utente) {
         PreparedStatement pstmt = null;
         try {
             if (conn == null || conn.isClosed()) {
@@ -49,9 +49,9 @@ public class Database {
             }
             String query;
             if ("employee".equals(tipo_utente)) {
-                query = "INSERT INTO employees (nome, cognome, email, password, id_company) VALUES (?,?,?,?,?)";
+                query = "INSERT INTO employee (nome, cognome, email, password, id_department) VALUES (?,?,?,?,?)";
             } else {
-                query = "INSERT INTO manager (nome, cognome, email, password, id_company) VALUES (?,?,?,?,?)";
+                query = "INSERT INTO manager (nome, cognome, email, password, id_department) VALUES (?,?,?,?,?)";
             }
 
             pstmt = conn.prepareStatement(query);
@@ -59,7 +59,7 @@ public class Database {
             pstmt.setString(2, cognome);
             pstmt.setString(3, email);
             pstmt.setString(4, password);
-            pstmt.setInt(5, id_company);
+            pstmt.setInt(5, id_department);
 
             int numRows = pstmt.executeUpdate();
             return numRows > 0;
@@ -130,6 +130,43 @@ public class Database {
             String query = "SELECT id FROM department WHERE nome = ?";
             stmt = conn.prepareStatement(query);
             stmt.setString(1, nomeDipartimento);
+
+            result = stmt.executeQuery();
+
+            if (result.next()) {
+                return result.getInt("id");
+            } else {
+                return 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Errore nell'esecuzione della query:");
+            e.printStackTrace();
+            return -1;
+        } finally {
+            try {
+                if (result != null) result.close();
+                if (stmt != null) stmt.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    
+    public int verificaPasswordDipartimento(String passw) {
+    	PreparedStatement stmt = null;
+		ResultSet result = null;
+		try {
+            if (conn == null || conn.isClosed()) {
+                avviaConnessione();
+            }
+
+            if (passw == null) {
+                throw new IllegalArgumentException("Errore: il nome del dipartimento è null.");
+            }
+
+            String query = "SELECT id FROM department WHERE password = ?";
+            stmt = conn.prepareStatement(query);
+            stmt.setString(1, passw);
 
             result = stmt.executeQuery();
 
