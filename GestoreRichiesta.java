@@ -222,7 +222,7 @@ public class GestoreRichiesta {
             			return new Risposta("ERRORE","idDeparment mancante!");
             		}
             		idDepartment=(Integer) richiesta.getParametro("idDepartment");
-            		System.out.println(idDepartment);
+            		//System.out.println(idDepartment);
             		query="SELECT * FROM attivita WHERE (id_employee="+user.getId()+" OR id_department="+idDepartment+") AND !stato='COMPLETATA'";
             	}else if(tipo_utente.equals("manager")) {
             		query="SELECT a.*, e.nome AS nome_dipendente, e.cognome AS cognome_dipendente, d.nome AS nome_dipartimento "
