@@ -44,15 +44,31 @@ public class DatabaseMenager {
         return portaServer;
     }
 
+    protected void setPortaServer(int porta){
+        portaServer=porta;
+    }
+
     public String getDbUrl() {
         return dbUrl;
+    }
+
+    protected void setDbUrl(String url){
+        dbUrl=url;
     }
 
     public String getDbUsername() {
         return dbUsername;
     }
 
+    protected void setDbUsername(String username){
+        dbUsername=username;
+    }
+
     public String getDbPassword() {
         return dbPassword;
+    }
+
+    protected void setDbPassword(String password){
+        dbPassword=password;
     }
 }

@@ -4,7 +4,7 @@
         <porta>3306</porta>
     </server>
     <database>
-        <url>jdbc:mysql://localhost:3306/to-list</url>
+        <url>jdbc:mysql://localhost:3306/to-do-list</url>
         <username>root</username>
         <password></password>
     </database>
